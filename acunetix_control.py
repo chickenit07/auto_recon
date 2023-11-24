@@ -52,6 +52,7 @@ def createTargetsGroup(domain, output_path):
         "name": domain
     }
     response = requests.post(url, headers=headers, json=data, verify=False)
+    print(response.text)
     if response.status_code == 201:
         print("Create Targets Group successful!")
         response_data = response.json()

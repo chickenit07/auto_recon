@@ -3,9 +3,12 @@ import json
 import argparse
 import acunetix_control
 import requests
-import subprocess
 import os
 import shutil
+import time
+import subprocess
+from watchdog.observers import Observer
+from watchdog.events import FileSystemEventHandler
 
 def checkOsmedeusConnection():
     with open("config.conf", "r") as file:
@@ -38,35 +41,44 @@ def checkOsmedeusConnection():
         print("Connetion fail.", response.status_code)
         return False
     
-def runOsmedeus(target):
+def runOsmedeusCommand(target):
     command = f"osmedeus scan -f general -t {target}"
     process = subprocess.run(command, shell=True)
+    return process
 
-    return_code = process.returncode
+def runOsmedeus(domain, subdomain_file):
+    if checkOsmedeusConnection():
+        print("Start running Osmedeus")
+        try:
+            #Run osmedeus
+            runOsmedeusCommand(domain)
+            print("Run Osmedeus Successfully")
+            return True
+        except KeyboardInterrupt as e:
+            # Handle the specific exception
+            print(f"Exception: {e}")
+            if os.path.exists(subdomain_file):
+                return True
+            return False
+        except Exception as e:
+            # Catch other exceptions
+            print(f"Unexpected Exception: {e}")
+            return False
 
-    if return_code == 0:
-        return True
-    else:
-        return False
+def runHttpxCommand(subdomain_file):   
 
-def runAcunetix():
-        targets = process_httpx_file(httpx_file)
-        print(targets)
-        acunetix_control.createScans(domain, targets, output_path)
-
-def runHttpxCommand():
-    subdomain_list = osmedeus_local_dir + "/workspaces-osmedeus/"  + domain + "/subdomain/" + "final-" + domain + ".txt"
-    
-    command = f"cat {subdomain_list} | /root/go-workspace/bin/httpx --no-color -title -status-code | tee {httpx_file}"
+    command = f"cat {subdomain_file} | /root/go-workspace/bin/httpx --no-color -title -status-code | tee {httpx_file}"
     print(command)
+
     try:
+        #Run httpx command
         result = subprocess.run(command, shell=True)
         print(result)
         return True
     except subprocess.CalledProcessError:
         # The command failed (non-zero return code)
         return False
-    
+
 def process_httpx_file(filename):
     result = []
     with open(filename, "r", encoding="utf-8") as file:
@@ -85,6 +97,11 @@ def process_httpx_file(filename):
                 })
     return result
 
+def runAcunetix():
+        targets = process_httpx_file(httpx_file)
+        print(targets)
+        acunetix_control.createScans(domain, targets, output_path)
+
 def checkDirExist(output_path):
      # Check if the output path exists
     if os.path.exists(output_path):
@@ -101,7 +118,9 @@ def checkDirExist(output_path):
     # Create a new directory
     os.makedirs(output_path)
     print(f"Created new directory: {output_path}")
-    
+
+
+
 def main(args):
     global domain
     global httpx_file
@@ -115,12 +134,15 @@ def main(args):
     osmedeus_local_dir = "/root"
     httpx_file = output_path + "/" + domain + "/httpx.txt"
     output_path = f"{output_path}/{domain}"
+    
+    subdomain_file = osmedeus_local_dir + "/workspaces-osmedeus/"  + domain + "/subdomain/" + "final-" + domain + ".txt"
 
     checkDirExist(output_path)
-    
-    if checkOsmedeusConnection() and runOsmedeus(domain) and runHttpxCommand() and acunetix:
+    if runOsmedeus(domain, subdomain_file) and runHttpxCommand(subdomain_file) and acunetix:
+        print("Start running Acunetix")
         runAcunetix()
-    
+        print("Run Acunetix Successfully")
+            
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Recon Domain")
     parser.add_argument("-d", "--domain", required=True, help="Specify the domain")
