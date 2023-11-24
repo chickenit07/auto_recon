@@ -5,10 +5,7 @@ import acunetix_control
 import requests
 import os
 import shutil
-import time
 import subprocess
-from watchdog.observers import Observer
-from watchdog.events import FileSystemEventHandler
 
 def checkOsmedeusConnection():
     with open("config.conf", "r") as file:
