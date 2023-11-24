@@ -104,9 +104,9 @@ def checkDirExist(output_path):
     if os.path.exists(output_path):
         # Ask the user whether to continue or not
         choice = input(f"The output path '{output_path}' already exists. This action will delete the existing directory and its contents. Do you want to continue? (Y/n): ")
-        if not choice or choice.lower() != "y":
+        if choice.lower() == "n":
             print("Aborted by user.")
-            return
+            return 
 
         # Remove the existing directory
         shutil.rmtree(output_path)
@@ -115,8 +115,6 @@ def checkDirExist(output_path):
     # Create a new directory
     os.makedirs(output_path)
     print(f"Created new directory: {output_path}")
-
-
 
 def main(args):
     global domain

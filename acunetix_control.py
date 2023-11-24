@@ -48,6 +48,18 @@ def createTargetsGroup(domain, output_path):
     headers = {
         "X-Auth": acunetix_apikey
     }
+    choice = input(f"Target group '{domain}' already exists. This action will delete the existing target group. Do you want to continue? (Y/n): ")
+    if choice.lower() == "n":
+        print("Aborted by user.")
+        return 
+    # Check if the target group already exists
+    existing_target_group_id = getTargetGroupIdByName(domain)
+    
+    if existing_target_group_id:
+        # Target group already exists, delete it
+        deleteTargetGroup(existing_target_group_id)
+        print(f"Existing target group '{domain}' deleted.")
+    # Create a new target group
     data = {
         "name": domain
     }
@@ -62,6 +74,36 @@ def createTargetsGroup(domain, output_path):
     else:
         print("API request failed with status code:", response.status_code)
         return None
+
+def deleteTargetGroup(target_group_id):
+    url = f"https://{acunetix_host}:{acunetix_port}/api/v1/target_groups/{target_group_id}"
+    headers = {
+        "X-Auth": acunetix_apikey
+    }
+    response = requests.delete(url, headers=headers, verify=False)
+
+    if response.status_code == 204:
+        print(f"Target group with ID {target_group_id} deleted successfully.")
+    else:
+        print(f"Failed to delete target group with ID {target_group_id}. Status code:", response.status_code)
+
+def getTargetGroupIdByName(target_group_name):
+    url = f"https://{acunetix_host}:{acunetix_port}/api/v1/target_groups"
+    headers = {
+        "X-Auth": acunetix_apikey
+    }
+    response = requests.get(url, headers=headers, verify=False)
+
+    if response.status_code == 200:
+        response_data = response.json()
+        target_groups = response_data.get("groups", [])
+        for group in target_groups:
+            if group.get("name") == target_group_name:
+                return group.get("group_id")
+    else:
+        print("Failed to retrieve target groups. Status code:", response.status_code)
+    return None
+
 
 def createTargets(targets_list, targets_group, output_path):
     targets = []
