@@ -48,13 +48,13 @@ def createTargetsGroup(domain, output_path):
     headers = {
         "X-Auth": acunetix_apikey
     }
-    choice = input(f"Target group '{domain}' already exists. This action will delete the existing target group. Do you want to continue? (Y/n): ")
-    if choice.lower() == "n":
-        print("Aborted by user.")
-        return 
+#    choice = input(f"Target group '{domain}' already exists. This action will delete the existing target group. Do you want to continue? (Y/n): ")
+#    if choice.lower() == "n":
+#        print("Aborted by user.")
+#        return 
     # Check if the target group already exists
     existing_target_group_id = getTargetGroupIdByName(domain)
-    
+ 
     if existing_target_group_id:
         # Target group already exists, delete it
         deleteTargetGroup(existing_target_group_id)
